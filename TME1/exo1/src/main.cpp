@@ -10,7 +10,7 @@ int main () {
 	str[0] = 'a';
 	str[1] = 'b';
 	str[2] = 'c';
-	str[3] = '\0'
+	str[3] = '\0';
 	size_t i = 0;
 
 	if (! strcmp (str, abc.c_str())) {
