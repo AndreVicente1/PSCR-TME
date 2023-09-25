@@ -11,7 +11,7 @@ int main () {
 	str[1] = 'b';
 	str[2] = 'c';
 	str[3] = '\0';
-	int i = 0;
+	int i = 0; // FAUTE: remplacer size_t par int, car size_t est entier non  signé (il ne prend pas de valeurs negatives )
 
 	if (! strcmp (str, abc.c_str())) {
 		std::cout << "Equal !";
@@ -28,7 +28,7 @@ int main () {
 	for (i= list.size() -1 ; i >= 0 ; i--) {
 		std::cout << "elt " << i << ": " << list[i] << std::endl;
 	}
-
+	//FAUTE : free de string pas possible
 	// et la chaine elle meme
 	delete[] str;
 
