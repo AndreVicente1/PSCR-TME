@@ -35,7 +35,7 @@ public:
 
 	void push_back (const std::string& val) ;
 
-	void push_front (const std::string& val) ;
+	void push_front (const std::string& val) ; //FAUTE : enlever le corp
 
 	bool empty() ;
 
