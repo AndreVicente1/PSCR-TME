@@ -1,3 +1,4 @@
+#include <forward_list>
 using namespace std;
 template <typename K, typename V>
 class HashMap{
@@ -9,29 +10,46 @@ class HashMap{
     };
 
     size_t sz;
-    vector<list<Entry>> buckets;
+    vector<forward_list<Entry>> buckets;
 
     size_t hash(const K& key) const {
-        // You can implement your own hash function here or use std::hash.
-        return std::hash<K>{}(key) % capacity;
+        size_t h = std::hash<K>{}(key);
+        return h % buckets.size();
     }
 
     public:
-        HashMap(size_t initialCapacity = 16) : sz(initialCapacity), bucket(initialCapacity) {}
+        HashMap(size_t size) : buckets(size) {}
         ~HashMap() {}
 
-        void insert(const K& key, V& value) {
+        bool put(const K& key,V& value) {
             size_t index = hash(key);
             for (Entry& entry : buckets[index]) {
                 if (entry.key == key) {
-                    // Key already exists, update the value.
-                    entry.value = value;
-                    return;
+                    // la clé existe deja, on incremente de 1 la valeur
+                    entry.value = entry.value+1;
+                    return true;
                 }
             }
 
-            // Key does not exist in this bucket, insert a new entry.
-            buckets[index].emplace_back(key, value);
+            // Kla clé n'existe pas, on insert le nouvbvel élement
+            buckets[index].emplace_front(Entry(key, value));
+            return false;
         }
+        V* get(const K& key) {
+            size_t index = hash(key);
+            for (Entry& entry : buckets[index]) {
+                if (entry.key == key) {
+                    return &entry.value;
+                }
+            }
+            return nullptr;
+        }
+        size_t size() const {
+            size_t count = 0;
+            for (const auto& bucket : buckets) {
+                count += std::distance(bucket.begin(), bucket.end());
+            }
+            return count;
+    }
 
 };
