@@ -35,9 +35,9 @@ int main () {
 		h.put(word,increment);
 	}
 	
-	std::cout << "Word: " <<  "war" << ", est présent: " << h.get("war") << " fois "<<std::endl;
-	std::cout << "Word: " <<  "peace" << ", est présent: " << h.get("peace") << " fois "<<std::endl;
-	std::cout << "Word: " <<  "toto" << ", est présent: " << h.get("toto") << " fois "<<std::endl;
+	std::cout << "Word: " <<  "war" << ", est présent: " << *h.get("war") << " fois "<<std::endl;
+	std::cout << "Word: " <<  "peace" << ", est présent: " << *h.get("peace") << " fois "<<std::endl;
+	std::cout << "Word: " <<  "toto" << ", est présent: " << *h.get("toto") << " fois "<<std::endl;
 
 	input.close();
 
