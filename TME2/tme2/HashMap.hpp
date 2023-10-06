@@ -1,6 +1,7 @@
 #include <forward_list>
 using namespace std;
 template <typename K, typename V>
+
 class HashMap{
     struct Entry{
         
@@ -50,6 +51,46 @@ class HashMap{
                 count += std::distance(bucket.begin(), bucket.end());
             }
             return count;
+        }
+        iterator begin () {
+            size_t index = 0;
+            for (;index<buckets.size();++index){
+                if (!buckets[index].empty()){
+                    break;
+                }
+            }
+            if (sz == 0) return end();
+
+            return iterator(buckets,index,buckets[index].begin())
+        }
+        iterator end () { return nullptr;}
+
+    class iterator{
+
+        typename forward_list<Entry>::iterator it;
+        size_t index;
+        vector<forward_list<Entry>> *buckets;
+
+        iterator () : buckets (&buckets),index(0),it(){}
+
+        Entry& operator*(){ 
+            return *it; 
+        }
+        iterator& operator++(){ 
+            // fin de la forwardlist - on cherche le prochain buckket
+            if (++it == buckets[index].end()){
+                while (buckets[++index]==nullptr ){
+                    if (index == sz) {
+                        it = end();
+                        return *this;
+                    }
+                }
+                it = buckets[index].begin();
+            }
+            return *this;
+        }
+        bool operator!=(const iterator &other){return cur != other.cur;}
     }
 
 };
+
