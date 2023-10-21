@@ -15,7 +15,7 @@ int main () {
 	cout << "Parsing War and Peace" << endl;
 	
 	HashMap<string, int> h(100);
-	
+	std::vector<std::pair<std::string, int>> v;
 	size_t nombre_lu = 0;
 	// prochain mot lu
 	string word;
@@ -34,7 +34,12 @@ int main () {
 		int increment = 1;
 		h.put(word,increment);
 	}
-	
+
+	for (auto it = h.begin(); it != h.end(); ++it) {
+		v.push_back(*it.key, *it.value);
+	}
+
+
 	std::cout << "Word: " <<  "war" << ", est présent: " << *h.get("war") << " fois "<<std::endl;
 	std::cout << "Word: " <<  "peace" << ", est présent: " << *h.get("peace") << " fois "<<std::endl;
 	std::cout << "Word: " <<  "toto" << ", est présent: " << *h.get("toto") << " fois "<<std::endl;

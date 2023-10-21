@@ -4,7 +4,6 @@ template <typename K, typename V>
 
 class HashMap{
     struct Entry{
-        
         const K key;
         V value;
         Entry(const K& k, V& v) : key(k), value(v) {}
@@ -52,18 +51,6 @@ class HashMap{
             }
             return count;
         }
-        iterator begin () {
-            size_t index = 0;
-            for (;index<buckets.size();++index){
-                if (!buckets[index].empty()){
-                    break;
-                }
-            }
-            if (sz == 0) return end();
-
-            return iterator(buckets,index,buckets[index].begin())
-        }
-        iterator end () { return nullptr;}
 
     class iterator{
 
@@ -89,8 +76,22 @@ class HashMap{
             }
             return *this;
         }
-        bool operator!=(const iterator &other){return cur != other.cur;}
-    }
+        bool operator!=(const iterator &other){
+            return index!=other.index || it!=other.it || buckets!=other.buckets;
+        }
+    };
+    iterator begin () {
+            size_t index = 0;
+            for (;index<buckets.size();++index){
+                if (!buckets[index].empty()){
+                    break;
+                }
+            }
+            if (sz == 0) return end();
+
+            return iterator(buckets,index,buckets[index].begin());
+        }
+    iterator end () { return nullptr;}
 
 };
 
