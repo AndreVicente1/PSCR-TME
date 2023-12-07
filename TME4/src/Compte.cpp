@@ -29,4 +29,21 @@ Compte::Compte(const Compte & other) {
 std::mutex & getMutex() {
 	return m;
 }
+
+//Question 10
+void debut_traitement() {
+	unique_lock<mutex> g(m);
+	traitement = true;
+}
+
+void fin_traitement() {
+	unique_lock<mutex> g(m);
+	traitement = false;
+}
+
+bool est_traitement() const {
+	unique_lock<mutex> g(m);
+	return traitement;
+}
+
 }

@@ -3,38 +3,38 @@
 using namespace std;
 using namespace pr;
 
-const int NB_THREAD = 10;
-int main () {
-	vector<thread> threads;
-	int nb_comptes = 100;
-	int JP = 1000;
-	threads.reserve(NB_THREAD);
-	Banque b(nb_comptes, JP);
-	
-	std::cout << "Creation  des threads" << std::endl;
-	for(int i = 0; i < NB_THREAD; i++) {
-		threads.push_back(thread([i, &b, nb_comptes](){
-			for(int j = 0; j < 1000000; j++) {
-				// transfert d'un montant m aleatoire entre 1 et 100 entre deux comptes aleatoire
-				&Banque::transfert,&b,rand() % nb_comptes, rand() % nb_comptes, rand() % 100 + 1;
-			}
-			//dormir pendant une durée aléatoire entre 0 et 20ms
-			this_thread::sleep_for(chrono::milliseconds(rand() % 20));	
-		}));
-	}
-	std::cout << "Join  des threads" << std::endl;
-	for (auto & t : threads) {
-		t.join();
-	}
-	std::cout << "Fin des threads" << std::endl;
+const size_t N = 10; // Nombre de threads
+void transactionThread(Banque& banque) {
+    srand(time(NULL));
 
+    for (int i = 0; i < 1000; ++i) {
+        int idDebit = rand() % banque.size(); // indice compte
+        int idCredit;
+        do {
+            idCredit = rand() % banque.size(); // indice compte different du premier
+        } while (idDebit == idCredit);
 
-	// TODO : tester solde = NB_THREAD * JP
-	std::cout << "Test du solde" << std::endl;
-	
-	if (b.comptabiliser( nb_comptes*JP)){
-		std::cout << "Pas d'erreur de comptabilité" << std::endl;
-	}
+        unsigned int val = (rand() % 100) + 1; // montant
 
-	return 0;
+        banque.transfert(idDebit, idCredit, val);
+        this_thread::sleep_for(chrono::milliseconds(rand()%21));
+    }
+}
+
+int main() {
+    const size_t ncomptes = 100;
+    const size_t soldeInitial = 1000;
+
+    Banque banque(ncomptes, soldeInitial);
+    vector<thread> threads;
+
+    for (size_t i = 0; i < N; ++i) {
+        threads.emplace_back(transactionThread, ref(banque));
+    }
+
+    for (auto& t : threads) {
+        t.join();
+    }
+
+    return 0;
 }

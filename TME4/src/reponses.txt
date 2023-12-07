@@ -1,0 +1,29 @@
+Question 2:
+
+Les méthodes crediter et debiter dans Compte utilise un mutex pour garantir la modification de 'solde' une fois par thread. Cela permet d'éviter que d'autres threads modifient 'solde' en même temps.
+La méthode getSolde utilise également le mutex ce qui assure la synchronisation avec toutes écritures.
+Le constructeur par copie verrouille le mutex pour garantir que le solde ne soit pas modifier par d'autres threads.
+En conclusion, la structure de Compte permet bien d'éviter les data races.
+
+Question 5:
+
+Le programme bloque à cause d'un deadlock entre les deux mutex utilisés pour débiter et créditer.
+
+Question 6:
+
+Thread 1 : verrouille compte A, et tente de faire des opérations sur le compte B
+Thread 2 : verrouille compte B, et tente de faire des opérations sur le compte A
+=>Deadlock
+
+Question 7:
+
+Non, comptabiliser n'utilise pas de mutex et n'assure donc pas la cohérence des données lors de la lecture des soldes. Par exemple, si un thread fait un transfert de crédit pendant le calcul du bilan, cela pourrait mener à un bilan inexact.
+
+Question 8:
+
+Augmenter nombre tours de boucle / et threads: = augmenter nombre de transactions, et donc plus de chance d'erreurs.
+Eliminer sleep: + de chevauchements entre les opérations
+
+Question 10:
+
+On rajoute un booléen qui permet de vérifier si le compte est en traitement.
