@@ -1,96 +1,103 @@
 #include <forward_list>
-using namespace std;
-template <typename K, typename V>
+#include <vector>
+#include <functional>
 
-class HashMap{
-    struct Entry{
-        
+using namespace std;
+
+template <typename K, typename V>
+class HashMap {
+    struct Entry {
         const K key;
         V value;
-        Entry(const K& k, V& v) : key(k), value(v) {}
+        Entry(const K& k, const V& v) : key(k), value(v) {}
     };
 
-    size_t sz;
     vector<forward_list<Entry>> buckets;
 
     size_t hash(const K& key) const {
-        size_t h = std::hash<K>{}(key);
-        return h % buckets.size();
+        return std::hash<K>{}(key) % buckets.size();
     }
+
+public:
+    explicit HashMap(size_t size) : buckets(size) {}
+
+    bool put(const K& key, const V& value) {
+        size_t index = hash(key);
+        for (Entry& entry : buckets[index]) {
+            if (entry.key == key) {
+                entry.value = value;
+                return true;
+            }
+        }
+        buckets[index].emplace_front(key, value);
+        return false;
+    }
+
+    V* get(const K& key) {
+        size_t index = hash(key);
+        for (Entry& entry : buckets[index]) {
+            if (entry.key == key) {
+                return &entry.value;
+            }
+        }
+        return nullptr;
+    }
+
+    size_t size() const {
+        size_t count = 0;
+        for (const auto& bucket : buckets) {
+            count += distance(bucket.begin(), bucket.end());
+        }
+        return count;
+    }
+
+    class iterator {
+        size_t index;
+        typename forward_list<Entry>::iterator lit;
+        vector<forward_list<Entry>>& buckets;
 
     public:
-        HashMap(size_t size) : buckets(size) {}
-        ~HashMap() {}
+        iterator(size_t index, typename forward_list<Entry>::iterator lit, vector<forward_list<Entry>>& buckets)
+            : index(index), lit(lit), buckets(buckets) {}
 
-        bool put(const K& key,V& value) {
-            size_t index = hash(key);
-            for (Entry& entry : buckets[index]) {
-                if (entry.key == key) {
-                    // la clé existe deja, on incremente de 1 la valeur
-                    entry.value = entry.value+1;
-                    return true;
+        iterator& operator++() {
+            // Advance the iterator in the current bucket
+            ++lit;
+
+            // Check if the current bucket iterator is at the end and there are more buckets to consider
+            while (index < buckets.size() && lit == buckets[index].end()) {
+                // Move to the next bucket
+                ++index;
+
+                // If the next bucket is within the range and not empty, set the local iterator to its beginning
+                if (index < buckets.size() && !buckets[index].empty()) {
+                    lit = buckets[index].begin();
                 }
             }
 
-            // Kla clé n'existe pas, on insert le nouvbvel élement
-            buckets[index].emplace_front(Entry(key, value));
-            return false;
-        }
-        V* get(const K& key) {
-            size_t index = hash(key);
-            for (Entry& entry : buckets[index]) {
-                if (entry.key == key) {
-                    return &entry.value;
-                }
-            }
-            return nullptr;
-        }
-        size_t size() const {
-            size_t count = 0;
-            for (const auto& bucket : buckets) {
-                count += std::distance(bucket.begin(), bucket.end());
-            }
-            return count;
-        }
-        iterator begin () {
-            size_t index = 0;
-            for (;index<buckets.size();++index){
-                if (!buckets[index].empty()){
-                    break;
-                }
-            }
-            if (sz == 0) return end();
-
-            return iterator(buckets,index,buckets[index].begin())
-        }
-        iterator end () { return nullptr;}
-
-    class iterator{
-
-        typename forward_list<Entry>::iterator it;
-        size_t index;
-        vector<forward_list<Entry>> *buckets;
-
-        iterator () : buckets (&buckets),index(0),it(){}
-
-        Entry& operator*(){ 
-            return *it; 
-        }
-        iterator& operator++(){ 
-            // fin de la forwardlist - on cherche le prochain buckket
-            if (++it == buckets[index].end()){
-                while (buckets[++index]==nullptr ){
-                    if (index == sz) {
-                        it = end();
-                        return *this;
-                    }
-                }
-                it = buckets[index].begin();
-            }
             return *this;
         }
-        bool operator!=(const iterator &other){return cur != other.cur;}
+
+
+        bool operator!=(const iterator& o) const {
+            return index != o.index || lit != o.lit;
+        }
+
+        Entry& operator*() {
+            return *lit;
+        }
+    };
+
+    iterator begin() {
+        for (size_t index = 0; index < buckets.size(); ++index) {
+            if (!buckets[index].empty()) {
+                return iterator(index, buckets[index].begin(), buckets);
+            }
+        }
+        return end();
     }
 
+    iterator end() {
+        return iterator(buckets.size(), buckets.back().end(), buckets);
+    }
 };
-
