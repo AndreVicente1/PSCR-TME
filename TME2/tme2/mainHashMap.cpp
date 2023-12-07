@@ -28,17 +28,38 @@ int main () {
 		transform(word.begin(),word.end(),word.begin(),::tolower);
 
 		// word est maintenant "tout propre"
-		if (nombre_lu % 100 == 0)
+		
+		if (nombre_lu % 100 == 0) {
 			// on affiche un mot "propre" sur 100
-			cout << nombre_lu << ": "<< word << endl;
-		int increment = 1;
-		h.put(word,increment);
+			cout << nombre_lu << ": " << word << endl;
+		}
+		nombre_lu++;
+
+		// Vérifier si le mot existe déjà et le mettre à jour
+		int* count = h.get(word);
+		if (count) {
+			// Le mot existe déjà, mise à jour de son compteur
+			(*count)++;
+		} else {
+			// Nouveau mot, initialisation à 1
+			h.put(word, 1);
+		}
 	}
 
 	for (auto it = h.begin(); it != h.end(); ++it) {
-		v.push_back(*it.key, *it.value);
+		v.push_back(std::make_pair((*it).key, (*it).value));
 	}
 
+	// Trier par nombre d'occurrences décroissantes
+	std::sort(v.begin(), v.end(), [](const auto& a, const auto& b) {
+		return a.second > b.second; 
+	});
+
+	// Afficher les 10 mots les plus fréquents
+	cout << "Les 10 mots les plus fréquents : " << endl;
+	for (int i = 0; i < 10 && i < v.size(); ++i) {
+		cout << v[i].first << ": " << v[i].second << endl;
+	}
 
 	std::cout << "Word: " <<  "war" << ", est présent: " << *h.get("war") << " fois "<<std::endl;
 	std::cout << "Word: " <<  "peace" << ", est présent: " << *h.get("peace") << " fois "<<std::endl;
