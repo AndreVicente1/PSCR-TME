@@ -3,7 +3,7 @@
 #include <ctime>
 #include <cstdlib>
 #include <unistd.h>
-#include <sys/wait.h> // Pour la fonction wait()
+#include <sys/wait.h>
 
 
 
@@ -13,19 +13,17 @@ int hp = 3; // Compteur de vies
 void attaque(pid_t adversaire) {
 
     signal(SIGUSR1, [](int signal) {
-        if (signal == SIGUSR1){
-            hp--;
-            std::cout << getpid() << " attaque, points de vie restants : " << remainingLives << std::endl;
-            if (hp <= 0) {
-                std::cout << getpid() << " est mort, le processus se termine." << std::endl;
-                exit(1);
-            }
+        hp--;
+        std::cout << getpid() << " est attaqué, points de vie restants : " << hp << std::endl;
+        if (hp <= 0) {
+            std::cout << getpid() << " est mort, le processus se termine." << std::endl;
+            exit(1);
         }
     });
 
     
     if (kill(adversaire, SIGUSR1) != 0) {
-        std::cout << "L'adversaire a déjà perdu. Le processus se termine." << std::endl;
+        std::cout << "L'adversaire " << adversaire << " a déjà perdu. Le processus se termine." << std::endl;
         exit(0);
     }
 
@@ -35,8 +33,8 @@ void attaque(pid_t adversaire) {
 
 // Fonction de défense
 void defense() {
-    signal(SIGUSR1, SIG_IGN);
-
+    signal(SIGUSR1, SIG_IGN); //ignoré le signal lors de la reception quand defense
+    std::cout << getpid() << " defend " << std::endl;
     usleep((rand() % 700 + 300) * 1000);
 }
 
@@ -53,7 +51,6 @@ void combat(pid_t adversaire) {
 }
 
 int main() {
-    // Initialisation de la séquence aléatoire
     srand(time(NULL));
 
     pid_t luke_pid;
@@ -66,6 +63,6 @@ int main() {
     } else {
         combat(luke_pid); // Vador combat Luke
     }
-
+    wait(NULL);
     return 0;
 }

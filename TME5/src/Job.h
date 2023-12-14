@@ -20,7 +20,7 @@ public:
 	virtual ~Job() {};
 };
 
-// Job concret : exemple
+
 
 class SleepJob : public Job {
 	int calcul (int v) {

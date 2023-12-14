@@ -23,7 +23,3 @@ Question 8:
 
 Augmenter nombre tours de boucle / et threads: = augmenter nombre de transactions, et donc plus de chance d'erreurs.
 Eliminer sleep: + de chevauchements entre les opérations
-
-Question 10:
-
-On rajoute un booléen qui permet de vérifier si le compte est en traitement.
