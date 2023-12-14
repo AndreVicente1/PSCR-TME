@@ -1,4 +1,3 @@
-#pragma once
 
 #include "Queue.h"
 #include "Job.h"
@@ -11,32 +10,39 @@ class Pool {
 	Queue<Job> queue;
 	std::vector<std::thread> threads;
 public:
-	Pool(int qsize) : queue(qsize) {}
-	void start(int nbt){
-        threads.reserve(nbt);
-        for (int i=0;i<nbt;i++){
-            threads.emplace_back(&Pool::poolworker, this);
-        }
-    }
-	void submit (Job *j){
-        queue.push(j);
-    }
+	Pool(int qsize): queue(qsize) {}
+
+	void start (int nbthread){
+		threads.reserve(nbthread);
+		for (int i=0; i< nbthread ; i++){
+			threads.emplace_back(poolWorker, std::ref(queue));
+		}
+	}
+
+	void submit (Job * job) {
+		queue.push(job);
+	}
+
 	void stop(){
-        queue.setBlocking(false);
-        for (auto &t : threads){
-            t.join();
-        }
-        threads.clear();
-    }
-	void poolworker() {
-        while ( true ){
-            Job* j = queue.pop();
-            if (j==nullptr) {break;}
-            j->run();
-            delete j;
-        }
-    }
-	~Pool(){stop();}
+		queue.setBlocking(false);
+		for(auto &t : threads){
+			t.join();
+		}
+		threads.clear();
+	}
+
+	~Pool() {
+	}
 };
+void poolWorker(Queue<Job> &queue){
+	while(true){
+		Job * pobj = queue.pop();
+		if(pobj==nullptr){
+			return;
+		}
+		pobj->run();
+		delete pobj;
+	}
+}
 
 }

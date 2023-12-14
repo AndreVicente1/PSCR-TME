@@ -3,6 +3,7 @@
 #include "Scene.h"
 #include "Job.h"
 #include "Pool.h"
+#include "Barrier.h"
 #include <iostream>
 #include <algorithm>
 #include <fstream>
@@ -100,40 +101,38 @@ void exportImage(const char * path, size_t width, size_t height, Color * pixels)
 	img.close();
 }
 
+class PixelJob : public Job {
+	int x,y;
+	Color * pixels;
+	Scene &scene;
+	vector<Vec3D> &lights;
+	Barrier &barrier;
+public :
+	PixelJob(int x, int y, Color * pixels,Scene &scene, vector<Vec3D> &lights, Barrier &bar) :
+		x(x), y(y), pixels(pixels), scene(scene), lights(lights), barrier(bar) {}
+	void run () {
+		auto screenPoint = scene.getScreenPoints()[x][y];
+		Rayon ray(scene.getCameraPos(), screenPoint);
+
+		int targetSphere = findClosestInter(scene, ray);
+
+		if (targetSphere == -1) {
+			barrier.done();
+		} else {
+			const Sphere & obj = *(scene.begin() + targetSphere);
+			Color finalcolor = computeColor(obj, ray, scene.getCameraPos(), lights);
+			Color & pixel = pixels[y*scene.getHeight() + x];
+			pixel = finalcolor;
+			barrier.done();
+		}
+
+		return;
+	}
+	~PixelJob(){}
+};
+
 // NB : en francais pour le cours, preferez coder en english toujours.
 // pas d'accents pour eviter les soucis d'encodage
-class JobPixel : public Job{
-	const Scene & scene;
-	const Scene::screen_t & screen;
-	Color * pixels;
-	int x;
-	int y;
-	std::vector<Vec3D> & lights;
-
-	public:
-		JobPixel(const Scene & scene, const Scene::screen_t & screen, Color * pixels, int x, int y, std::vector<Vec3D> & lights) : scene(scene), screen(screen), pixels(pixels), x(x), y(y), lights(lights) {}
-		void run() {
-			// le point de l'ecran par lequel passe ce rayon
-			auto & screenPoint = screen[y][x];
-			// le rayon a inspecter
-			Rayon  ray(scene.getCameraPos(), screenPoint);
-
-			int targetSphere = findClosestInter(scene, ray);
-
-			if (targetSphere == -1) {
-				// keep background color
-				return;
-			} else {
-				const Sphere & obj = *(scene.begin() + targetSphere);
-				// pixel prend la couleur de l'objet
-				Color finalcolor = computeColor(obj, ray, scene.getCameraPos(), lights);
-				// le point de l'image (pixel) dont on vient de calculer la couleur
-				Color & pixel = pixels[y*scene.getHeight() + x];
-				// mettre a jour la couleur du pixel dans l'image finale.
-				pixel = finalcolor;
-			}
-		}
-};
 
 int main () {
 
@@ -144,8 +143,8 @@ int main () {
 	Scene scene (1000,1000);
 	// remplir avec un peu d'aléatoire
 	fillScene(scene, re);
-	
-	// lumieres 
+
+	// lumieres
 	vector<Vec3D> lights;
 	lights.reserve(3);
 	lights.emplace_back(Vec3D(50, 50, -50));
@@ -158,16 +157,33 @@ int main () {
 
 	// Les couleurs des pixels dans l'image finale
 	Color * pixels = new Color[scene.getWidth() * scene.getHeight()];
-	Pool pool(1000);
-	pool.start(30);
+
 	// pour chaque pixel, calculer sa couleur
 	for (int x =0 ; x < scene.getWidth() ; x++) {
 		for (int  y = 0 ; y < scene.getHeight() ; y++) {
-			pool.submit(new JobPixel(scene, screen, pixels, x, y, lights));
+			// le point de l'ecran par lequel passe ce rayon
+			auto & screenPoint = screen[y][x];
+			// le rayon a inspecter
+			Rayon  ray(scene.getCameraPos(), screenPoint);
+
+			int targetSphere = findClosestInter(scene, ray);
+
+			if (targetSphere == -1) {
+				// keep background color
+				continue ;
+			} else {
+				const Sphere & obj = *(scene.begin() + targetSphere);
+				// pixel prend la couleur de l'objet
+				Color finalcolor = computeColor(obj, ray, scene.getCameraPos(), lights);
+				// le point de l'image (pixel) dont on vient de calculer la couleur
+				Color & pixel = pixels[y*scene.getHeight() + x];
+				// mettre a jour la couleur du pixel dans l'image finale.
+				pixel = finalcolor;
+			}
 
 		}
 	}
-	pool.stop();
+
 	std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
 	    std::cout << "Total time "
 	              << std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count()
@@ -175,6 +191,48 @@ int main () {
 
 	exportImage("toto.ppm",scene.getWidth(), scene.getHeight() , pixels);
 
+
+	// AVEC THREAD
+	std::chrono::steady_clock::time_point start2 = std::chrono::steady_clock::now();
+	// on pose une graine basee sur la date
+	default_random_engine re2(std::chrono::system_clock::now().time_since_epoch().count());
+	// definir la Scene : resolution de l'image
+	Scene scene2 (1000,1000);
+	// remplir avec un peu d'aléatoire
+	fillScene(scene2, re2);
+
+	// lumieres
+	vector<Vec3D> lights2;
+	lights2.reserve(3);
+	lights2.emplace_back(Vec3D(50, 50, -50));
+	lights2.emplace_back(Vec3D(50, 50, 120));
+	lights2.emplace_back(Vec3D(200, 0, 120));
+
+	// les points de l'ecran, en coordonnées 3D, au sein de la Scene.
+	// on tire un rayon de l'observateur vers chacun de ces points
+	const Scene::screen_t & screen2 = scene2.getScreenPoints();
+
+	// Les couleurs des pixels dans l'image finale
+	Color * pixels2 = new Color[scene2.getWidth() * scene2.getHeight()];
+
+	int nbthreads = 4;
+	int nbjobs=scene2.getHeight() * scene2.getWidth();
+	Pool pool(nbjobs);
+	pool.start(nbthreads);
+	Barrier b(nbjobs);
+	for (int x =0 ; x < scene2.getWidth() ; x++) {
+		for (int  y = 0 ; y < scene2.getHeight() ; y++) {
+			pool.submit(new PixelJob(x, y, pixels2, scene2, lights2, b));
+		}
+	}
+	b.waitFor();
+	pool.stop();
+	std::chrono::steady_clock::time_point end2 = std::chrono::steady_clock::now();
+	    std::cout << "Total time pour toto2"
+	              << std::chrono::duration_cast<std::chrono::milliseconds>(end2 - start2).count()
+	              << "ms.\n";
+
+	exportImage("toto2.ppm",scene2.getWidth(), scene2.getHeight() , pixels2);
+
 	return 0;
 }
-
